@@ -1,0 +1,13 @@
+# Streamlit app configuration — dark theme matches SASA cybersecurity palette.
+# Users can still override via Settings menu, but dark is the default.
+
+[theme]
+base = "dark"
+primaryColor = "#00D4FF"
+backgroundColor = "#0B1426"
+secondaryBackgroundColor = "#1A2332"
+textColor = "#E2E8F0"
+font = "IBM Plex Sans"
+
+[browser]
+gatherUsageStats = false

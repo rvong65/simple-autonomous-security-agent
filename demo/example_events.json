@@ -1,0 +1,26 @@
+[
+  {
+    "label": "SSH brute-force (external IP)",
+    "text": "2024-01-15 03:22:11 sshd[1234]: Failed password for root from 185.220.101.1 port 54321 ssh2"
+  },
+  {
+    "label": "SQL injection attempt (web log)",
+    "text": "192.168.1.50 - - [15/Jan/2024:10:05:33 +0000] \"GET /search?q=1' OR 1=1-- HTTP/1.1\" 404 512 \"-\" \"sqlmap/1.7\""
+  },
+  {
+    "label": "Suspicious domain lookup",
+    "text": "DNS query for suspicious-domain-abc123.xyz from workstation WS-4421 — flagged by DNS filtering"
+  },
+  {
+    "label": "High-risk IP (demo blocklist)",
+    "text": "Firewall alert: outbound connection attempt to 45.155.205.233:4444 from host APP-SERVER-03"
+  },
+  {
+    "label": "Path traversal probe",
+    "text": "10.0.0.5 - admin [15/Jan/2024:14:30:00] \"GET /../../../etc/passwd HTTP/1.1\" 403 0 \"-\" \"nikto/2.5.0\""
+  },
+  {
+    "label": "Benign internal event",
+    "text": "User jsmith successfully logged in from 10.0.1.50 via VPN at 2024-01-15 09:00:00"
+  }
+]

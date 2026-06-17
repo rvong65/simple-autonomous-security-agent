@@ -1,0 +1,36 @@
+# Secrets and local environment
+.env
+.env.local
+.streamlit/secrets.toml
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Test artifacts
+tests/output/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Downloaded investigation exports (local testing)
+sasa_investigation.json
+sasa_summary.txt
