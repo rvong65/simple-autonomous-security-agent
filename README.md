@@ -43,7 +43,13 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 | **python-whois** | `whois_lookup` | Domain registration metadata |
 | **Regex signatures** | `log_pattern_match` | Built-in patterns for brute-force, SQLi, scanners, traversal |
 
-No proprietary datasets are bundled. External APIs are optional and rate-limited.
+**Models used at runtime** (not redistributed in this repo):
+| Model | Role | License / acknowledgment |
+|-------|------|--------------------------|
+| `gemma3:4b` (Ollama) | Local dev LLM | [Gemma Terms of Use](https://ai.google.dev/gemma/terms) |
+| `llama-3.1-8b-instant` (Groq) | Cloud demo LLM | Meta Llama via Groq API — [Groq Terms](https://groq.com/terms/) |
+
+No proprietary datasets are bundled. External APIs and LLM providers are optional and subject to their respective terms and rate limits.
 
 ## 🏗️ Architecture & Design Choices
 
