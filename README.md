@@ -4,6 +4,105 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 
 > **Disclaimer:** SASA is an investigation assistant, not an autonomous blocker or remediation system. It performs read-only lookups and never executes destructive actions.
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://simple-autonomous-security-agent.streamlit.app/)
+
+## Table of Contents
+
+**Get started**
+- [Live Demo](#live-demo)
+- [Features](#features)
+- [Quick Start](#quick-start)
+
+**Overview**
+- [Problem & Motivation](#problem-motivation)
+- [Tech Stack](#tech-stack)
+- [Data Sources & Attribution](#data-sources)
+
+**Technical**
+- [Architecture & Design Choices](#architecture-design-choices)
+  - [Development Journey](#development-journey)
+- [Safety Considerations](#safety-considerations)
+- [CI/CD](#cicd)
+- [Project Status & Build Log](#project-status)
+- [Repository Layout](#repository-layout)
+
+**Legal & contact**
+- [License](#license)
+- [Contact / Next Steps](#contact)
+
+---
+
+<a id="live-demo"></a>
+
+## 🚀 Live Demo
+
+**[▶ Open the live app on Streamlit Cloud](https://simple-autonomous-security-agent.streamlit.app/)**
+
+**Before you open the app:**
+- **Cold start:** This app runs on Streamlit Community Cloud and may go to sleep after inactivity. If you see **“Zzzz — This app has gone to sleep due to inactivity”**, click **“Yes, get this app back up!”** to wake it — anyone can do this; you don’t need to contact the maintainer. Startup may take a minute after you click.
+
+
+**Screenshot:**
+
+![SASA investigation — SSH brute-force demo](docs/screenshots/ssh-brute-force.png)
+
+*Screenshot from a run using Groq (`llama-3.1-8b-instant`). Tool evidence and risk ratings are grounded in deterministic checks; LLM-generated narrative text may differ by provider, model, and run.*
+
+**Local demo:** `streamlit run app.py` → load a sidebar demo event → **Investigate**.
+
+<a id="features"></a>
+
+## ✨ Features
+
+- **Autonomous ReAct loop** — up to 8 steps with full transparency
+- **4 investigation tools** — log patterns, threat intel, IP lookup, WHOIS (all read-only)
+- **Risk floor enforcement** — tool evidence caps minimum report severity
+- **Input & tool guardrails** — refuses attacks/off-topic; blocks private IP external lookups
+- **Cybersecurity UI** — custom theme, IBM Plex Sans + JetBrains Mono, How It Works sidebar
+- **Analyst exports** — downloadable JSON investigation report and plain-text summary (.txt)
+- **Friendly LLM errors** — rate limits (429), auth, timeout with optional technical details
+- **Hybrid LLM** — Groq (cloud default) or Ollama (local); Together as optional fallback
+
+<a id="quick-start"></a>
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- **Groq** (default): free API key at [console.groq.com](https://console.groq.com)
+- **Or Ollama** (local): [ollama.com](https://ollama.com) + `ollama pull gemma3:4b`
+
+### Setup
+
+```bash
+git clone https://github.com/rvong65/simple-autonomous-security-agent.git
+cd simple-autonomous-security-agent
+python -m venv .venv
+
+# Windows
+.\.venv\Scripts\Activate.ps1
+# macOS / Linux
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env — add GROQ_API_KEY (or switch to the Ollama block in .env.example)
+streamlit run app.py
+```
+
+Configuration reference: see `.env.example` (local) and `.streamlit/secrets.toml.example` (Streamlit Cloud).
+
+**Groq batch testing** (all 6 demos — use delay to avoid HTTP 429):
+
+```bash
+python scripts/run_demo_investigations.py --delay 15
+```
+
+---
+
+<a id="problem-motivation"></a>
+
 ## 🎯 Problem & Motivation
 
 Security analysts spend significant time triaging noisy alerts: correlating log patterns, checking IP reputation, and deciding whether an event is benign or actionable. Manual context gathering is slow, and opaque “black box” AI tools erode trust in SOC workflows.
@@ -14,6 +113,8 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 - **Enforcing read-only guardrails** — no exploitation, blocking, or off-topic requests
 - **Grounding risk ratings in tool evidence** via a deterministic risk floor (LLM cannot under-rate blocklist hits)
 - **Supporting hybrid deployment** — Groq for cloud demos, Ollama for offline use
+
+<a id="tech-stack"></a>
 
 ## 🛠️ Tech Stack
 
@@ -32,6 +133,8 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 | Validation | Pydantic models, guardrails, risk scorer |
 | Testing | `unittest` — 64 offline tests + integration quality gates |
 
+<a id="data-sources"></a>
+
 ## 📊 Data Sources & Attribution
 
 | Source | Used by | Notes |
@@ -44,12 +147,17 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 | **Regex signatures** | `log_pattern_match` | Built-in patterns for brute-force, SQLi, scanners, traversal |
 
 **Models used at runtime** (not redistributed in this repo):
+
 | Model | Role | License / acknowledgment |
 |-------|------|--------------------------|
 | `gemma3:4b` (Ollama) | Local dev LLM | [Gemma Terms of Use](https://ai.google.dev/gemma/terms) |
 | `llama-3.1-8b-instant` (Groq) | Cloud demo LLM | Meta Llama via Groq API — [Groq Terms](https://groq.com/terms/) |
 
 No proprietary datasets are bundled. External APIs and LLM providers are optional and subject to their respective terms and rate limits.
+
+---
+
+<a id="architecture-design-choices"></a>
 
 ## 🏗️ Architecture & Design Choices
 
@@ -121,6 +229,8 @@ flowchart TB
 - **Explicit `LLM_PROVIDER`** — Groq is not auto-selected from key presence alone
 - **Server-side API keys** — Groq/Together credentials live in env/secrets only; never sent to the browser or exports
 
+<a id="development-journey"></a>
+
 ### Development Journey
 
 ```mermaid
@@ -135,62 +245,7 @@ flowchart LR
     H --> I[GitHub + Streamlit deploy<br/>MVP]
 ```
 
-## 🚀 Live Demo
-
-**[▶ Open the live app on Streamlit Cloud](https://simple-autonomous-security-agent.streamlit.app/)** 
-
-**Screenshot:**
-
-![SASA investigation — SSH brute-force demo](docs/screenshots/ssh-brute-force.png)
-
-*Screenshot from a run using Groq (`llama-3.1-8b-instant`). Tool evidence and risk ratings are grounded in deterministic checks; LLM-generated narrative text may differ by provider, model, and run.*
-
-Local demo: `streamlit run app.py` → load a sidebar demo event → **Investigate**.
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- **Groq** (default): free API key at [console.groq.com](https://console.groq.com)
-- **Or Ollama** (local): [ollama.com](https://ollama.com) + `ollama pull gemma3:4b`
-
-### Setup
-
-```bash
-git clone https://github.com/rvong65/simple-autonomous-security-agent.git
-cd simple-autonomous-security-agent
-python -m venv .venv
-
-# Windows
-.\.venv\Scripts\Activate.ps1
-# macOS / Linux
-# source .venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env — add GROQ_API_KEY (or switch to the Ollama block in .env.example)
-streamlit run app.py
-```
-
-Configuration reference: see `.env.example` (local) and `.streamlit/secrets.toml.example` (Streamlit Cloud).
-
-**Groq batch testing** (all 6 demos — use delay to avoid HTTP 429):
-
-```bash
-python scripts/run_demo_investigations.py --delay 15
-```
-
-## ✨ Features
-
-- **Autonomous ReAct loop** — up to 8 steps with full transparency
-- **4 investigation tools** — log patterns, threat intel, IP lookup, WHOIS (all read-only)
-- **Risk floor enforcement** — tool evidence caps minimum report severity
-- **Input & tool guardrails** — refuses attacks/off-topic; blocks private IP external lookups
-- **Cybersecurity UI** — custom theme, IBM Plex Sans + JetBrains Mono, How It Works sidebar
-- **Analyst exports** — downloadable JSON investigation report and plain-text summary (.txt)
-- **Friendly LLM errors** — rate limits (429), auth, timeout with optional technical details
-- **Hybrid LLM** — Groq (cloud default) or Ollama (local); Together as optional fallback
+<a id="safety-considerations"></a>
 
 ## 🛡️ Safety Considerations
 
@@ -205,6 +260,8 @@ python scripts/run_demo_investigations.py --delay 15
 | API key hygiene | Groq/Together keys read from server env only — never in UI, exports, or browser |
 | Analyst disclaimer | UI + README: correlate with internal telemetry before action |
 
+<a id="cicd"></a>
+
 ## 🔄 CI/CD
 
 GitHub Actions runs on every push and pull request to `main` / `master`:
@@ -215,6 +272,8 @@ GitHub Actions runs on every push and pull request to `main` / `master`:
 - **Integration tests** (`tests.test_integration_investigate`) are run locally or manually when an LLM is configured
 
 This is a **CI pipeline** for regression safety; **CD** (continuous deployment) is handled by Streamlit Cloud on merge to the default branch.
+
+<a id="project-status"></a>
 
 ## 📈 Project Status & Build Log
 
@@ -229,7 +288,9 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 | 7 | GitHub Actions CI | ✅ |
 | 8 | Streamlit Cloud deploy | ✅ |
 
-**Current status:** ✅ MVP complete — ready for public demo deploy 
+**Current status:** ✅ MVP complete — ready for public demo deploy
+
+<a id="repository-layout"></a>
 
 ## 📁 Repository Layout
 
@@ -245,19 +306,27 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 │   ├── risk_scorer.py          # Tool evidence risk floor
 │   ├── export_format.py        # JSON + plain-text report exports
 │   └── secrets.py              # API key presence checks (no values exposed)
-├── docs/screenshots/           # README demo images 
+├── docs/screenshots/           # README demo images
 ├── demo/example_events.json    # 6 SOC demo scenarios
 ├── scripts/run_demo_investigations.py
 ├── tests/                      # Unit + integration tests
 ├── .github/workflows/tests.yml # CI pipeline
 ├── .streamlit/config.toml      # Custom theme defaults
 ├── .env.example                # Local config template (Groq default)
-└── requirements.txt
+├── LICENSE                     # MIT License
+├── README.md                   # Project overview
+└── requirements.txt            # Python dependencies
 ```
+
+---
+
+<a id="license"></a>
 
 ## 📄 License
 
 **MIT License** — see [LICENSE](LICENSE).
+
+<a id="contact"></a>
 
 ## 🤝 Contact / Next Steps
 
