@@ -556,6 +556,37 @@ def _render_config_card(settings) -> None:
             )
 
 
+def _render_privacy_notice(settings) -> None:
+    """Sidebar notice: where investigation data is sent (cloud LLM and external tools)."""
+    provider = settings.llm_provider.value
+    is_cloud_llm = provider in ("groq", "together")
+    with st.sidebar.expander("Privacy & data", expanded=False):
+        st.markdown(
+            "Text you submit is processed **on the server** running this app, then sent to:"
+        )
+        st.markdown(
+            f"- **LLM ({provider})** — your event and agent reasoning context"
+        )
+        st.markdown(
+            "- **Read-only tools** — e.g. IP geolocation (ipapi.co), optional AbuseIPDB/WHOIS when the agent calls them"
+        )
+        if is_cloud_llm:
+            st.warning(
+                "Cloud LLM mode: do **not** paste classified data, credentials, or production secrets. "
+                "Use demo events or run locally with Ollama for sensitive material.",
+                icon="⚠️",
+            )
+        else:
+            st.info(
+                "Local LLM (Ollama): prompts stay on your network; external tool APIs may still receive IPs/domains.",
+                icon="ℹ️",
+            )
+        st.caption(
+            "SASA does not store investigations in a database. Session data clears when you close the tab. "
+            "See README → Privacy & data for full details."
+        )
+
+
 def _render_sidebar(settings) -> str | None:
     """Sidebar: brand, how-it-works, config, demo events. Returns selected demo text."""
     st.sidebar.markdown(
@@ -572,6 +603,8 @@ def _render_sidebar(settings) -> str | None:
 
     st.sidebar.markdown("### Configuration")
     _render_config_card(settings)
+
+    _render_privacy_notice(settings)
 
     st.sidebar.divider()
     st.sidebar.markdown("### Demo Events")

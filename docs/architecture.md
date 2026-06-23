@@ -255,16 +255,20 @@ Cold starts: Community Cloud apps sleep after inactivity; users wake the app fro
 | Rate / cost abuse | Per-session investigation limit; max tool calls per run |
 | LLM under-rating threats | Deterministic risk floor from tool observations |
 | Over-trust in AI output | Full chain-of-thought visible; analyst disclaimer in UI and exports |
+| Cloud user data | README + UI privacy notices; recommend demo/synthetic input on public Groq demo; Ollama for sensitive runs |
 
 Architecture-level principle: **evidence gathering is automated; decision authority stays with the analyst**, who must correlate with internal telemetry before action.
+
+**Privacy:** Investigation text is transmitted to configured LLM and tool APIs (Groq, ipapi.co, etc.). SASA does not persist queries to a project database; see README [Privacy & data](../README.md#privacy-data).
 
 ---
 
 ## Version
 
-Document version: v1.1.0 (aligned with [CHANGELOG.md](../CHANGELOG.md#110---2026-06-23))
+Document version: v1.1.1 (aligned with [CHANGELOG.md](../CHANGELOG.md#111---2026-06-23))
 
 | Release | Architecture highlights |
 |---------|------------|
+| **v1.1.1** | Privacy & data disclosures — README Safety section, Streamlit sidebar expander |
 | **v1.1.0** | Engineering maturity — Docker, `docs/architecture.md`, SVG assets, CHANGELOG, Docker CI |
 | **v1.0.0** | SASA MVP, Streamlit Cloud, Groq cloud profile, CI tests |

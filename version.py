@@ -3,4 +3,4 @@
 Keep in sync with CHANGELOG.md and GitHub Release tags.
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"

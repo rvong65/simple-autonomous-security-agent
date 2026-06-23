@@ -17,6 +17,8 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 
 > **Disclaimer:** SASA is an investigation assistant, not an autonomous blocker or remediation system. It performs read-only lookups and never executes destructive actions.
 
+> **Privacy (cloud demo):** When you investigate an event, the text you submit is sent to **third-party services** to run the agent — including the configured **LLM provider** (e.g. [Groq](https://groq.com/legal)) and optional tools such as [ipapi.co](https://ipapi.co/api/#introduction) or [AbuseIPDB](https://www.abuseipdb.com/). SASA does not add a separate database of your queries, but **do not paste classified, credentials, or production secrets** into the public Streamlit demo. For sensitive data, run **locally with Ollama** (see [Quick Start](#quick-start)). Details: [Safety → Privacy & data](#privacy-data).
+
 <details open>
 <summary><strong>Table of Contents</strong></summary>
 
@@ -35,7 +37,7 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 | 🏗️ [Architecture & Design Choices](#architecture-design-choices) | System design and investigation pipeline |
 | ↳ [Full architecture doc](docs/architecture.md) | Detailed system design (Mermaid) |
 | ↳ [Development Journey](#development-journey) | Build timeline summary |
-| 🛡️ [Safety Considerations](#safety-considerations) | Ethics and guardrails |
+| 🛡️ [Safety Considerations](#safety-considerations) | Ethics, guardrails, and data privacy |
 | 🔄 [CI/CD](#cicd) | GitHub Actions and deployment |
 | 📈 [Project Status & Build Log](#project-status) | Milestone checklist |
 | 📁 [Repository Layout](#repository-layout) | File tree |
@@ -55,6 +57,7 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 
 **Before you open the app:**
 - **Cold start:** This app runs on Streamlit Community Cloud and may go to sleep after inactivity. If you see **“Zzzz — This app has gone to sleep due to inactivity”**, click **“Yes, get this app back up!”** to wake it — anyone can do this; you don’t need to contact the maintainer. Startup may take a minute after you click.
+- **Privacy:** The public demo uses a **cloud LLM (Groq)**. Text you submit leaves the browser for SASA’s server and is forwarded to Groq and any tools the agent calls (e.g. IP geolocation). Use **demo/synthetic events only** — not real production logs with secrets. See [Privacy & data](#privacy-data).
 
 **Screenshot:**
 
@@ -203,6 +206,7 @@ No proprietary datasets are bundled. External APIs and LLM providers are optiona
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **[v1.1.1](CHANGELOG.md#111---2026-06-23)** | 2026-06-23 | Privacy & data disclosures (README + Streamlit sidebar) |
 | **[v1.1.0](CHANGELOG.md#110---2026-06-23)** | 2026-06-23 | Docker, architecture doc, branding assets, collapsible ToC, CHANGELOG, Docker CI |
 | **[v1.0.0](CHANGELOG.md#100---2026-06-17)** | 2026-06-17 | MVP: ReAct agent, 4 tools, risk floor, Streamlit UI, CI, public Streamlit deploy |
 
@@ -253,6 +257,26 @@ Build timeline and deployment details: [docs/architecture.md#development-journey
 | API key hygiene | Groq/Together keys read from server env only — never in UI, exports, or browser |
 | Analyst disclaimer | UI + README: correlate with internal telemetry before action |
 
+<a id="privacy-data"></a>
+
+### Privacy & data handling
+
+SASA is designed for **investigation assistance**, not as a certified data-processing platform. Understand where your input goes:
+
+| Data you submit | Where it may be sent | Notes |
+|-----------------|----------------------|-------|
+| Event text (logs, IPs, domains) | **LLM provider** (Groq, Together, or local Ollama) | Cloud providers process prompts per their own [terms](https://groq.com/terms/) and privacy policies |
+| ReAct conversation context | Same LLM provider | Prior thoughts/actions in the run are included in API requests |
+| Public IPs / domains (tools) | **ipapi.co**, optional **AbuseIPDB**, **WHOIS** | Only when the agent calls those tools |
+| Session state | Streamlit app memory | Cleared when the session ends; **not** written to a project database by SASA |
+| Exports you download | Your machine only | JSON/TXT files are generated in the browser for you to save |
+
+**Public Streamlit Cloud demo:** Treat it like any shared SaaS triage UI — **no classified data, credentials, PII, or live production secrets**. Prefer sidebar **demo events** or synthetic lines for testing.
+
+**Sensitive environments:** Run on your own machine or Docker with **`LLM_PROVIDER=ollama`** so event text stays on your network (tool calls to external APIs still apply unless you disable/limit tools).
+
+**Maintainer:** This repo does not intentionally log investigation content to disk. Streamlit Cloud and cloud API providers have their own operational logging — review their documentation if compliance matters.
+
 <a id="cicd"></a>
 
 ## 🔄 CI/CD
@@ -292,8 +316,9 @@ Workflow file: [`.github/workflows/tests.yml`](.github/workflows/tests.yml)
 | 7 | GitHub Actions CI | ✅ |
 | 8 | Streamlit Cloud deploy | ✅ |
 | 9 | v1.1 — Docker, architecture doc, branding, CHANGELOG | ✅ |
+| 10 | v1.1.1 — privacy & cloud data disclosures | ✅ |
 
-**Current status:** ✅ v1.1.0 — MVP plus packaging and reproducibility release
+**Current status:** ✅ v1.1.1 — MVP + packaging + privacy disclosures
 
 <a id="repository-layout"></a>
 
@@ -302,7 +327,7 @@ Workflow file: [`.github/workflows/tests.yml`](.github/workflows/tests.yml)
 ```
 ├── app.py                      # Streamlit UI
 ├── agent.py                    # ReAct investigation loop
-├── version.py                  # Application version (1.1.0)
+├── version.py                  # Application version (1.1.1)
 ├── config/settings.py          # LLM provider, limits, secrets loading
 ├── tools/                      # ip_lookup, whois, log_matcher, threat_intel
 ├── utils/
