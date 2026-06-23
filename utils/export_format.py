@@ -47,7 +47,10 @@ def build_export_payload(
         "steps": steps,
     }
     if settings is not None:
+        from version import __version__
+
         payload["metadata"] = {
+            "app_version": __version__,
             "llm_provider": settings.llm_provider.value,
             "llm_model": settings.llm_model,
             "deployment_profile": settings.deployment_profile.value,

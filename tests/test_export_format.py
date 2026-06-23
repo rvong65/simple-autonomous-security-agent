@@ -47,6 +47,7 @@ class TestExportFormat(unittest.TestCase):
         settings = Settings(llm_provider=LLMProvider.GROQ, llm_model="llama-3.1-8b-instant")
         payload = build_export_payload(state, report, settings=settings)
         self.assertEqual(payload["metadata"]["llm_provider"], "groq")
+        self.assertEqual(payload["metadata"]["app_version"], "1.1.0")
 
     def test_summary_includes_event_and_disclaimer(self) -> None:
         state, report = self._sample_state_and_report()

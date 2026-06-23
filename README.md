@@ -1,34 +1,49 @@
-# Simple Autonomous Security Agent (SASA)
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-light.svg">
+    <img alt="SASA — Simple Autonomous Security Agent" src="docs/assets/logo-light.svg" width="420">
+  </picture>
+</h1>
+
+[![Release](https://img.shields.io/github/v/release/rvong65/simple-autonomous-security-agent?label=release)](https://github.com/rvong65/simple-autonomous-security-agent/releases)
+[![CI](https://github.com/rvong65/simple-autonomous-security-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/rvong65/simple-autonomous-security-agent/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Groq%20%7C%20Ollama-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/rvong65/simple-autonomous-security-agent#docker)
+[![Agent](https://img.shields.io/badge/Agent-ReAct%20%C2%B7%20read--only-00D4FF?style=flat-square)](https://github.com/rvong65/simple-autonomous-security-agent/blob/main/docs/architecture.md)
+[![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://simple-autonomous-security-agent.streamlit.app/)
 
 A lightweight, transparent **autonomous security investigation agent** for SOC analysts and security learners. Paste a suspicious log line, IP, domain, or alert — SASA runs a **ReAct loop** (Thought → Action → Observation), calls read-only investigation tools, shows its full chain-of-thought, and produces a structured risk report with recommendations.
 
 > **Disclaimer:** SASA is an investigation assistant, not an autonomous blocker or remediation system. It performs read-only lookups and never executes destructive actions.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://simple-autonomous-security-agent.streamlit.app/)
+<details open>
+<summary><strong>Table of Contents</strong></summary>
 
-## Table of Contents
+| Section | Description |
+|---------|-------------|
+| **Get started** | |
+| 🚀 [Live Demo](#live-demo) | Try the Streamlit app (Cloud or local) |
+| ✨ [Features](#features) | Capabilities at a glance |
+| ⚡ [Quick Start](#quick-start) | Clone, install, run, test, Docker |
+| **Overview** | |
+| 🎯 [Problem & Motivation](#problem-motivation) | Why transparent SOC triage matters |
+| 🛠️ [Tech Stack](#tech-stack) | Languages, libraries, CI |
+| 📊 [Data Sources & Attribution](#data-sources) | Demo events, APIs, runtime LLM attribution |
+| 📌 [Version history](#version-history) | Release highlights |
+| **Technical** | |
+| 🏗️ [Architecture & Design Choices](#architecture-design-choices) | System design and investigation pipeline |
+| ↳ [Full architecture doc](docs/architecture.md) | Detailed system design (Mermaid) |
+| ↳ [Development Journey](#development-journey) | Build timeline summary |
+| 🛡️ [Safety Considerations](#safety-considerations) | Ethics and guardrails |
+| 🔄 [CI/CD](#cicd) | GitHub Actions and deployment |
+| 📈 [Project Status & Build Log](#project-status) | Milestone checklist |
+| 📁 [Repository Layout](#repository-layout) | File tree |
+| **Legal & contact** | |
+| 📄 [License](#license) | MIT + dataset attribution |
+| 🤝 [Contact / Next Steps](#contact) | Feedback and V2 roadmap |
 
-**Get started**
-- [Live Demo](#live-demo)
-- [Features](#features)
-- [Quick Start](#quick-start)
-
-**Overview**
-- [Problem & Motivation](#problem-motivation)
-- [Tech Stack](#tech-stack)
-- [Data Sources & Attribution](#data-sources)
-
-**Technical**
-- [Architecture & Design Choices](#architecture-design-choices)
-  - [Development Journey](#development-journey)
-- [Safety Considerations](#safety-considerations)
-- [CI/CD](#cicd)
-- [Project Status & Build Log](#project-status)
-- [Repository Layout](#repository-layout)
-
-**Legal & contact**
-- [License](#license)
-- [Contact / Next Steps](#contact)
+</details>
 
 ---
 
@@ -41,10 +56,9 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 **Before you open the app:**
 - **Cold start:** This app runs on Streamlit Community Cloud and may go to sleep after inactivity. If you see **“Zzzz — This app has gone to sleep due to inactivity”**, click **“Yes, get this app back up!”** to wake it — anyone can do this; you don’t need to contact the maintainer. Startup may take a minute after you click.
 
-
 **Screenshot:**
 
-![SASA investigation — SSH brute-force demo](docs/screenshots/ssh-brute-force.png)
+![SASA investigation — SSH brute-force demo](docs/screenshots/demo-screenshot.png)
 
 *Screenshot from a run using Groq (`llama-3.1-8b-instant`). Tool evidence and risk ratings are grounded in deterministic checks; LLM-generated narrative text may differ by provider, model, and run.*
 
@@ -69,11 +83,11 @@ A lightweight, transparent **autonomous security investigation agent** for SOC a
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.10+ **or** Docker
 - **Groq** (default): free API key at [console.groq.com](https://console.groq.com)
 - **Or Ollama** (local): [ollama.com](https://ollama.com) + `ollama pull gemma3:4b`
 
-### Setup
+### Setup (local)
 
 ```bash
 git clone https://github.com/rvong65/simple-autonomous-security-agent.git
@@ -98,6 +112,32 @@ Configuration reference: see `.env.example` (local) and `.streamlit/secrets.toml
 ```bash
 python scripts/run_demo_investigations.py --delay 15
 ```
+
+<a id="docker"></a>
+
+### Docker
+
+**Groq (default)** — create `.env` with `GROQ_API_KEY`:
+
+```bash
+docker compose up --build
+# Open http://localhost:8501
+```
+
+**Ollama profile** — set in `.env`:
+
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://ollama:11434
+LLM_MODEL=gemma3:4b
+```
+
+```bash
+docker compose --profile ollama up --build
+docker compose exec ollama ollama pull gemma3:4b
+```
+
+See [docs/architecture.md#deployment-topologies](docs/architecture.md#deployment-topologies) for details.
 
 ---
 
@@ -124,6 +164,7 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 ![Ollama](https://img.shields.io/badge/Ollama-local-black?style=for-the-badge)
 ![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 | Layer | Technology |
 |-------|------------|
@@ -131,6 +172,7 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 | Agent | Custom ReAct loop (`agent.py`) |
 | LLM | Groq (`llama-3.1-8b-instant`) or Ollama (`gemma3:4b`) via direct HTTP |
 | Validation | Pydantic models, guardrails, risk scorer |
+| Packaging | Docker + docker-compose (Groq default, Ollama profile) |
 | Testing | `unittest` — 64 offline tests + integration quality gates |
 
 <a id="data-sources"></a>
@@ -155,95 +197,46 @@ Security analysts spend significant time triaging noisy alerts: correlating log 
 
 No proprietary datasets are bundled. External APIs and LLM providers are optional and subject to their respective terms and rate limits.
 
+<a id="version-history"></a>
+
+## 📌 Version history
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| **[v1.1.0](CHANGELOG.md#110---2026-06-23)** | 2026-06-23 | Docker, architecture doc, branding assets, collapsible ToC, CHANGELOG, Docker CI |
+| **[v1.0.0](CHANGELOG.md#100---2026-06-17)** | 2026-06-17 | MVP: ReAct agent, 4 tools, risk floor, Streamlit UI, CI, public Streamlit deploy |
+
+Full details: **[CHANGELOG.md](CHANGELOG.md)** 
+
 ---
 
 <a id="architecture-design-choices"></a>
 
 ## 🏗️ Architecture & Design Choices
 
-```mermaid
-flowchart TB
-    subgraph Client["Client Layer"]
-        U[Analyst / Demo user]
-        UI[Streamlit UI<br/>app.py]
-    end
+Security events flow through input guard → optional Step 0 log scan → ReAct investigation (LLM + read-only tools) → deterministic risk floor merge → structured report and JSON/TXT export in the Streamlit UI. Guardrails and tool evidence keep output analyst-ready without opaque black-box scoring.
 
-    subgraph Guard["Safety Layer"]
-        IG[Input guard<br/>scope & attack refusal]
-        TG[Tool guard<br/>whitelist · private IP blocks]
-        RL[Rate limits<br/>per investigation]
-    end
+**Full design** — goals, end-to-end diagram, module map, deployment topologies (local / Docker / Streamlit Cloud), and architecture-level safety: **[docs/architecture.md](docs/architecture.md)**
 
-    subgraph Agent["Agent Layer — agent.py"]
-        BOOT[Log bootstrap<br/>auto log_pattern_match]
-        REACT[ReAct loop<br/>Thought → Action → Observation]
-        PARSE[Response parser<br/>+ format retry]
-        RF[Risk floor merge<br/>utils/risk_scorer.py]
-        RPT[Investigation report<br/>Low / Medium / High]
-    end
+**Key design decisions**
 
-    subgraph Tools["Tool Layer — tools/"]
-        LOG[log_pattern_match<br/>regex signatures]
-        TI[threat_intel<br/>heuristics + AbuseIPDB]
-        IP[ip_lookup<br/>ipapi.co]
-        WHO[whois_lookup<br/>python-whois]
-    end
-
-    subgraph Models["Model Layer — utils/llm.py"]
-        GROQ[Groq API<br/>llama-3.1-8b-instant]
-        OLL[Ollama API<br/>local models]
-        TGT[Together API<br/>optional fallback]
-    end
-
-    U --> UI
-    UI --> IG
-    IG -->|allowed| BOOT
-    BOOT --> LOG
-    BOOT --> REACT
-    REACT --> GROQ
-    REACT --> OLL
-    REACT --> TGT
-    REACT --> TG
-    TG --> LOG
-    TG --> TI
-    TG --> IP
-    TG --> WHO
-    LOG --> REACT
-    TI --> REACT
-    IP --> REACT
-    WHO --> REACT
-    REACT --> PARSE
-    PARSE --> RF
-    RF --> RPT
-    RPT --> UI
-    IG -->|refused| UI
-    RL --> REACT
-```
-
-**Key design decisions:**
-
-- **Direct HTTP to LLMs** — minimal dependencies, Windows-friendly installs
-- **Tool risk floor** — report risk = max(LLM rating, tool evidence); blocklist High cannot become Low
-- **Auto log scan (Step 0)** — log-like events get `log_pattern_match` before the LLM loop
-- **Structured guardrail observations** — private IP / invalid lookup errors returned as JSON the agent can reason about
-- **Explicit `LLM_PROVIDER`** — Groq is not auto-selected from key presence alone
-- **Server-side API keys** — Groq/Together credentials live in env/secrets only; never sent to the browser or exports
+| Decision | Rationale |
+|----------|-----------|
+| Custom ReAct loop | Full control over prompts, parsing, guardrails, and visible chain-of-thought |
+| Tool risk floor | Report risk = max(LLM rating, tool evidence); blocklist High cannot become Low |
+| Step 0 log bootstrap | Log-like events always get `log_pattern_match` before the LLM loop |
+| Direct HTTP to LLMs | Minimal dependencies; Windows-friendly; explicit Groq 429 retry |
+| Structured guardrail observations | Private IP / invalid lookup errors as JSON the agent can reason about |
+| Server-side API keys | Groq/Together credentials in env/secrets only — never in browser or exports |
+| Reproducibility | Docker image; 64 offline CI tests; integration quality gates on six demos |
 
 <a id="development-journey"></a>
 
 ### Development Journey
 
-```mermaid
-flowchart LR
-    A[ReAct agent<br/>4 read-only tools] --> B[Guardrails<br/>input + tool whitelist]
-    B --> C[Risk floor<br/>blocklist / log severity]
-    C --> D[Streamlit UI<br/>chain-of-thought + custom theme]
-    D --> E[Quality gates<br/>6 demo integration tests]
-    E --> F[Groq profile<br/>llama-3.1-8b-instant]
-    F --> G[LLM error UX<br/>429 · auth · timeout]
-    G --> H[64 offline tests<br/>+ GitHub Actions CI]
-    H --> I[GitHub + Streamlit deploy<br/>MVP]
-```
+Built incrementally from a four-tool ReAct agent through guardrails, risk floor, Streamlit UI, Groq integration, and CI/deploy. Notable fixes: risk floor after Tor blocklist under-rating; Step 0 bootstrap after log matcher skips; Groq 429 retry for batch demos.
+
+Build timeline and deployment details: [docs/architecture.md#development-journey](docs/architecture.md#development-journey).
 
 <a id="safety-considerations"></a>
 
@@ -264,14 +257,25 @@ flowchart LR
 
 ## 🔄 CI/CD
 
-GitHub Actions runs on every push and pull request to `main` / `master`:
+**GitHub Actions** runs on every push and pull request to `main` / `master`:
 
-- **Workflow:** `.github/workflows/tests.yml`
-- **Scope:** 64 offline unit tests (tools, guardrails, parsing, demos, risk scorer, LLM errors, export format, secret handling)
-- **API keys required:** **None** — CI does not call Groq, Ollama, or external threat APIs
-- **Integration tests** (`tests.test_integration_investigate`) are run locally or manually when an LLM is configured
+| Job | Step | Action |
+|-----|------|--------|
+| **offline-tests** | Trigger | Push or PR to `main` / `master` |
+| | Environment | `ubuntu-latest`, Python 3.11 |
+| | Install | `pip install -r requirements.txt` |
+| | Test | `python -m unittest` — 64 offline tests (tools, guardrails, parsing, demos, risk scorer, LLM errors, export format, secret handling) |
+| **docker-smoke** | Build | `docker build -t sasa:ci .` |
+| | Run | Container on port 8501 (placeholder `GROQ_API_KEY` for startup) |
+| | Health | Streamlit `/_stcore/health` |
 
-This is a **CI pipeline** for regression safety; **CD** (continuous deployment) is handled by Streamlit Cloud on merge to the default branch.
+Workflow file: [`.github/workflows/tests.yml`](.github/workflows/tests.yml)
+
+**No API keys in CI** — offline tests use fixtures and mocks only; the Docker job checks that the image starts and Streamlit responds.
+
+**Integration tests** (`tests.test_integration_investigate`) and **`scripts/run_demo_investigations.py`** require a configured LLM (Groq or Ollama) and are run locally or manually — not part of the CI workflow.
+
+**Streamlit Cloud** deploys independently from the `main` branch when connected to this repository (`app.py` + `requirements.txt` + Streamlit Secrets).
 
 <a id="project-status"></a>
 
@@ -287,8 +291,9 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 | 6 | 64 offline tests + integration harness | ✅ |
 | 7 | GitHub Actions CI | ✅ |
 | 8 | Streamlit Cloud deploy | ✅ |
+| 9 | v1.1 — Docker, architecture doc, branding, CHANGELOG | ✅ |
 
-**Current status:** ✅ MVP complete — ready for public demo deploy
+**Current status:** ✅ v1.1.0 — MVP plus packaging and reproducibility release
 
 <a id="repository-layout"></a>
 
@@ -297,6 +302,7 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 ```
 ├── app.py                      # Streamlit UI
 ├── agent.py                    # ReAct investigation loop
+├── version.py                  # Application version (1.1.0)
 ├── config/settings.py          # LLM provider, limits, secrets loading
 ├── tools/                      # ip_lookup, whois, log_matcher, threat_intel
 ├── utils/
@@ -306,16 +312,21 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 │   ├── risk_scorer.py          # Tool evidence risk floor
 │   ├── export_format.py        # JSON + plain-text report exports
 │   └── secrets.py              # API key presence checks (no values exposed)
-├── docs/screenshots/           # README demo images
+├── docs/
+│   ├── architecture.md         # Full system design
+│   ├── assets/                 # icon, favicon, logo (light/dark)
+│   └── screenshots/            # README demo images
 ├── demo/example_events.json    # 6 SOC demo scenarios
 ├── scripts/run_demo_investigations.py
 ├── tests/                      # Unit + integration tests
-├── .github/workflows/tests.yml # CI pipeline
+├── Dockerfile                  # Container image
+├── docker-compose.yml          # Groq default; ollama profile
+├── CHANGELOG.md                # Version-by-version change history
+├── .github/workflows/tests.yml # CI pipeline + Docker smoke
 ├── .streamlit/config.toml      # Custom theme defaults
 ├── .env.example                # Local config template (Groq default)
-├── LICENSE                     # MIT License
-├── README.md                   # Project overview
-└── requirements.txt            # Python dependencies
+├── LICENSE                     # MIT
+└── requirements.txt            # App + Streamlit Cloud runtime deps
 ```
 
 ---
@@ -326,17 +337,21 @@ This is a **CI pipeline** for regression safety; **CD** (continuous deployment) 
 
 **MIT License** — see [LICENSE](LICENSE).
 
+Dataset and runtime model attribution: see [Data Sources & Attribution](#data-sources).
+
 <a id="contact"></a>
 
 ## 🤝 Contact / Next Steps
 
 Open to feedback, suggestions, and mission-aligned collaboration.
 
-**Potential future directions** *(no promises on timeline)*:
+### V2 roadmap (planned)
 
-- MITRE ATT&CK technique mapping on log matches
-- Investigation history persistence (database / export archive)
-- Live step progress during long investigations
-- AbuseIPDB-first threat intel profile for production
-- PDF / shareable analyst report export
-- Additional tool integrations (Passive DNS, VirusTotal)
+| Area | Direction |
+|------|-----------|
+| **GenAI / agents** | Structured LLM output (JSON mode); optional investigation trace export |
+| **Threat intel** | AbuseIPDB-first profile; Passive DNS / VirusTotal tool integrations |
+| **Security taxonomy** | MITRE ATT&CK technique mapping on log pattern matches |
+| **Platform** | Investigation history persistence (database / export archive) |
+| **UX** | Live step progress during long investigations; PDF analyst report export |
+

@@ -1,0 +1,44 @@
+# SASA — Docker Compose
+#
+# Groq (default): ensure .env has GROQ_API_KEY and LLM_PROVIDER=groq
+#   docker compose up --build
+#
+# Ollama (local LLM): start Ollama profile and set in .env:
+#   LLM_PROVIDER=ollama
+#   OLLAMA_BASE_URL=http://ollama:11434
+#   docker compose --profile ollama up --build
+#   docker compose exec ollama ollama pull gemma3:4b
+
+services:
+  sasa:
+    build: .
+    container_name: sasa
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+    restart: unless-stopped
+    networks:
+      - sasa-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sasa-ollama
+    profiles:
+      - ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - sasa-net
+
+networks:
+  sasa-net:
+    driver: bridge
+
+volumes:
+  ollama_data:

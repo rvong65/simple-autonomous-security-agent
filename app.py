@@ -1,6 +1,10 @@
 """
 Simple Autonomous Security Agent (SASA) — Streamlit investigation UI.
 
+Entry point for the analyst-facing web app. Orchestrates session state, sidebar
+configuration, investigation triggers (via agent.run_investigation), and report
+rendering. All LLM and tool execution stays server-side.
+
 Run locally:
     streamlit run app.py
 """
@@ -12,9 +16,11 @@ import json
 import sys
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 import streamlit as st
 
+# Ensure project root is importable when Streamlit sets cwd elsewhere.
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -26,7 +32,9 @@ from utils.export_format import build_export_payload, build_summary_text
 from utils.guardrails import check_input
 from utils.secrets import groq_api_key_configured, together_api_key_configured
 
-# Cybersecurity UI palette (Streamlit custom CSS)
+# ---------------------------------------------------------------------------
+# Theme tokens — keep in sync with .streamlit/config.toml and docs/assets SVGs
+# ---------------------------------------------------------------------------
 THEME = {
     "navy": "#0B1426",
     "charcoal": "#141C2B",
@@ -61,7 +69,29 @@ ERROR_LABELS = {
 }
 
 
+# Brand assets: shield + magnifying glass = security investigation agent
+_ASSETS_DIR = PROJECT_ROOT / "docs" / "assets"
+_BRAND_ICON_SVG = _ASSETS_DIR / "icon.svg"
+_PAGE_ICON_SVG = _ASSETS_DIR / "favicon.svg"
+
+
+def _svg_data_uri(svg_path: Path) -> str:
+    """Inline an SVG as a data URI for use in st.markdown HTML (Streamlit-safe)."""
+    svg = svg_path.read_text(encoding="utf-8").strip()
+    return f"data:image/svg+xml,{quote(svg)}"
+
+
+def _brand_icon_img(height_px: int = 40) -> str:
+    """HTML img tag for the SASA brand icon (sidebar / header)."""
+    uri = _svg_data_uri(_BRAND_ICON_SVG)
+    return (
+        f'<img class="sasa-brand-icon" src="{uri}" '
+        f'height="{height_px}" width="{height_px}" alt="SASA logo" />'
+    )
+
+
 def _theme_css() -> str:
+    """Return injected CSS for the cybersecurity theme and component styling."""
     t = THEME
     return f"""
 <style>
@@ -147,22 +177,24 @@ def _theme_css() -> str:
     .sasa-brand {{
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.25rem;
+        gap: 0.2rem;
+        margin-bottom: 0.1rem;
     }}
-    .sasa-logo-mark {{
-        display: inline-flex;
-        align-items: center;
+    .sasa-brand-icon {{
+        flex-shrink: 0;
+        display: block;
+        margin: 0;
+        padding: 0;
+        vertical-align: middle;
+        filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.2));
+    }}
+    .sasa-brand-text {{
+        display: flex;
+        flex-direction: column;
         justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
-        background: {t['navy']};
-        border: 2px solid {t['cyan']};
-        color: {t['cyan']};
-        font-weight: 800;
-        font-size: 1rem;
-        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-        box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+        gap: 0;
+        line-height: 1.1;
+        margin-left: 0.1rem;
     }}
     .sasa-brand-title {{
         color: {t['cyan']};
@@ -387,24 +419,27 @@ def _theme_css() -> str:
 
 
 st.set_page_config(
-    page_title="SASA — Security Investigation Agent",
-    page_icon=str(PROJECT_ROOT / ".streamlit" / "sasa-icon.svg"),
+    page_title="SASA — Security Agent",
+    page_icon=str(_PAGE_ICON_SVG),
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 
 def _inject_theme() -> None:
+    """Inject global CSS (fonts, colors, Streamlit chrome overrides)."""
     st.markdown(_theme_css(), unsafe_allow_html=True)
 
 
 def _get_settings():
+    """Reload settings so .env / Streamlit secrets changes apply without full restart."""
     importlib.reload(settings_module)
     settings_module.get_settings.cache_clear()
     return settings_module.get_settings()
 
 
 def _load_demo_events() -> list[dict]:
+    """Load sidebar demo scenarios from demo/example_events.json."""
     demo_path = PROJECT_ROOT / "demo" / "example_events.json"
     if not demo_path.exists():
         return []
@@ -412,6 +447,7 @@ def _load_demo_events() -> list[dict]:
 
 
 def _init_session_state() -> None:
+    """Initialize Streamlit session keys for investigation lifecycle."""
     defaults = {
         "messages": [],
         "investigation": None,
@@ -426,6 +462,7 @@ def _init_session_state() -> None:
 
 
 def _render_how_it_works() -> None:
+    """Sidebar expander: ReAct loop and tool overview for new users."""
     with st.sidebar.expander("How It Works", expanded=False):
         st.markdown(
             """
@@ -465,6 +502,7 @@ def _render_how_it_works() -> None:
 
 
 def _status_dot(ok: bool, warn: bool = False) -> str:
+    """HTML span for configuration status indicator (green / amber / red)."""
     if ok:
         css = "sasa-status-ok"
     elif warn:
@@ -519,10 +557,11 @@ def _render_config_card(settings) -> None:
 
 
 def _render_sidebar(settings) -> str | None:
+    """Sidebar: brand, how-it-works, config, demo events. Returns selected demo text."""
     st.sidebar.markdown(
         '<div class="sasa-brand">'
-        '<span class="sasa-logo-mark">S</span>'
-        '<div><div class="sasa-brand-title">SASA</div>'
+        f"{_brand_icon_img(42)}"
+        '<div class="sasa-brand-text"><div class="sasa-brand-title">SASA</div>'
         '<div class="sasa-brand-sub">Security Investigation Agent</div></div>'
         "</div>",
         unsafe_allow_html=True,
@@ -560,6 +599,7 @@ def _render_sidebar(settings) -> str | None:
 
 
 def _render_llm_error(message: str, error_detail: dict | None) -> None:
+    """Friendly error panel for rate limits, auth, timeout, and provider failures."""
     code = (error_detail or {}).get("code", "unknown")
     tag = ERROR_LABELS.get(code, "ERROR")
     title_map = {
@@ -594,6 +634,7 @@ def _is_synthesis_step(step) -> bool:
 
 
 def _render_risk_badge(risk_level: str, tool_risk_floor: str | None = None) -> None:
+    """Display final risk level and optional tool-evidence floor badge."""
     color = RISK_COLORS.get(risk_level, THEME["muted"])
     floor_html = ""
     if tool_risk_floor and tool_risk_floor != "Low":
@@ -611,6 +652,7 @@ def _render_risk_badge(risk_level: str, tool_risk_floor: str | None = None) -> N
 
 
 def _render_steps(state: InvestigationState) -> None:
+    """Chain-of-thought panel: one expander per ReAct step with parsed observations."""
     st.markdown("### Chain of Thought")
     if not state.steps:
         st.info("No investigation steps yet.")
@@ -664,6 +706,7 @@ def _render_report(
     state: InvestigationState | None = None,
     settings=None,
 ) -> None:
+    """Investigation report with JSON/TXT downloads, risk badge, findings, recommendations."""
     st.markdown("### Investigation Report")
     with st.container(border=True):
         if state:
@@ -704,15 +747,16 @@ def _render_report(
 
 
 def main() -> None:
+    """Application entry: header, event input, investigate flow, results rendering."""
     _inject_theme()
     _init_session_state()
     settings = _get_settings()
 
     st.markdown(
         '<div class="sasa-header-bar">'
-        '<div class="sasa-brand" style="margin-bottom:0.75rem;">'
-        '<span class="sasa-logo-mark">S</span>'
-        '<div><div class="sasa-brand-title" style="font-size:1.5rem;">'
+        '<div class="sasa-brand" style="margin-bottom:0.5rem;">'
+        f"{_brand_icon_img(46)}"
+        '<div class="sasa-brand-text"><div class="sasa-brand-title" style="font-size:1.5rem; line-height:1.15;">'
         "Simple Autonomous Security Agent</div>"
         '<div class="sasa-brand-sub">Transparent ReAct investigation for SOC analysts</div></div>'
         "</div>"
